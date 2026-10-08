@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar sesión - BioLab</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="login-body">
+    <div class="login-card">
+        <div class="login-logo">
+            <h1>BIOLAB</h1>
+            <p>Laboratorio Clínico Danimar</p>
+        </div>
+        {% for categoria, texto in get_flashed_messages(with_categories=true) %}
+            <div class="alert-error">{{ texto }}</div>
+        {% endfor %}
+        <form method="post">
+            <label for="usuario">Usuario</label>
+            <input type="text" id="usuario" name="usuario" required autofocus>
+            <label for="clave">Contraseña</label>
+            <input type="password" id="clave" name="clave" required>
+            <button type="submit">Ingresar</button>
+        </form>
+    </div>
+</body>
+</html>

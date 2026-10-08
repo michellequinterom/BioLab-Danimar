@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% set activo = "pacientes" %}
+{% block contenido %}
+<h1>Pacientes</h1>
+<p class="subtitulo">Registro y consulta de pacientes del laboratorio.</p>
+
+<div class="panel">
+    <h2>Registrar paciente</h2>
+    <form method="post" action="{{ url_for('paciente_nuevo') }}" class="form-fila">
+        <div>
+            <label>Cédula</label>
+            <input type="text" name="cedula" inputmode="numeric" required>
+        </div>
+        <div>
+            <label>Nombre completo</label>
+            <input type="text" name="nombre_completo" required>
+        </div>
+        <div>
+            <label>Edad</label>
+            <input type="number" name="edad" min="0" max="120">
+        </div>
+        <div class="form-boton">
+            <button type="submit">Guardar</button>
+        </div>
+    </form>
+</div>
+
+<div class="panel">
+    <h2>Pacientes registrados ({{ pacientes|length }})</h2>
+    <form method="get" class="form-busqueda">
+        <input type="text" name="q" value="{{ q }}" placeholder="Buscar por cédula o nombre...">
+        <button type="submit">Buscar</button>
+        {% if q %}<a href="{{ url_for('pacientes') }}" class="btn-limpiar">Limpiar</a>{% endif %}
+    </form>
+    <table class="tabla">
+        <thead>
+            <tr><th>Cédula</th><th>Nombre completo</th><th>Edad</th><th>Registrado</th><th>Acciones</th></tr>
+        </thead>
+        <tbody>
+            {% for p in pacientes %}
+            <tr>
+                <td>{{ p.cedula }}</td>
+                <td>{{ p.nombre_completo }}</td>
+                <td>{{ p.edad if p.edad is not none else "-" }}</td>
+                <td>{{ p.fecha_registro }}</td>
+                <td class="acciones">
+                    <a href="{{ url_for('orden_nueva', paciente=p.id_paciente) }}" class="btn-accion">Nueva orden</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="vacio">No hay pacientes que mostrar.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

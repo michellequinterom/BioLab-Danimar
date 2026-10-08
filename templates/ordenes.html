@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% set activo = "ordenes" %}
+{% block contenido %}
+<h1>Órdenes</h1>
+<p class="subtitulo">Presupuestos generados y su estado de pago.</p>
+
+<div class="panel">
+    <table class="tabla">
+        <thead>
+            <tr><th>Orden</th><th>Fecha</th><th>Paciente</th><th style="text-align:right">Total</th>
+                <th style="text-align:right">Saldo</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for o in ordenes %}
+            <tr>
+                <td>#{{ o.id_orden }}</td>
+                <td>{{ o.fecha }}</td>
+                <td>{{ o.nombre_completo }}<br><small class="txt-suave">C.I. {{ o.cedula }}</small></td>
+                <td style="text-align:right">{{ o.total|dinero }}</td>
+                <td style="text-align:right">{{ o.saldo|dinero }}</td>
+                <td><span class="badge-pago {{ {'pago':'badge-pago-ok','parcial':'badge-pago-parcial','pendiente':'badge-pago-pend'}[o.estado_pago] }}">
+                    {{ {'pago':'Pagado','parcial':'Abono parcial','pendiente':'Pendiente'}[o.estado_pago] }}</span></td>
+                <td><a href="{{ url_for('orden_detalle', id_orden=o.id_orden) }}" class="btn-accion">Ver</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="vacio">Aún no hay órdenes. Crea una desde «Nueva orden».</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

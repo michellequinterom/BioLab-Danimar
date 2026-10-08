@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% set activo = "ordenes" %}
+{% block contenido %}
+<h1>Orden #{{ orden.id_orden }}</h1>
+<p class="subtitulo">{{ orden.nombre_completo }} · C.I. {{ orden.cedula }} · {{ orden.fecha }}</p>
+
+<div class="panel">
+    <h2>Presupuesto</h2>
+    <table class="tabla">
+        <thead><tr><th>Categoría</th><th>Examen</th><th style="text-align:right">Precio</th></tr></thead>
+        <tbody>
+            {% for d in detalle %}
+            <tr><td>{{ d.grupo }}</td><td>{{ d.nombre }}</td><td style="text-align:right">{{ d.costo|dinero }}</td></tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="fila-total"><td colspan="2">Total</td><td style="text-align:right">{{ orden.total|dinero }}</td></tr>
+        </tfoot>
+    </table>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card"><small>TOTAL</small><strong>{{ orden.total|dinero }}</strong></div>
+    <div class="stat-card"><small>ABONADO</small><strong>{{ orden.monto_abonado|dinero }}</strong></div>
+    <div class="stat-card {{ 'stat-alerta' if orden.saldo > 0 }}"><small>SALDO PENDIENTE</small><strong>{{ orden.saldo|dinero }}</strong></div>
+    <div class="stat-card"><small>ESTADO</small>
+        <strong><span class="badge-pago {{ {'pago':'badge-pago-ok','parcial':'badge-pago-parcial','pendiente':'badge-pago-pend'}[orden.estado_pago] }}">
+            {{ {'pago':'Pagado','parcial':'Abono parcial','pendiente':'Pendiente'}[orden.estado_pago] }}</span></strong></div>
+</div>
+
+{% if orden.saldo > 0 %}
+<div class="panel">
+    <h2>Registrar pago</h2>
+    <div class="pagos">
+        <form method="post" action="{{ url_for('orden_pago', id_orden=orden.id_orden) }}">
+            <input type="hidden" name="tipo" value="completo">
+            <button type="submit" class="btn">Pago completo ({{ orden.saldo|dinero }})</button>
+        </form>
+        <form method="post" action="{{ url_for('orden_pago', id_orden=orden.id_orden) }}" class="form-abono">
+            <input type="hidden" name="tipo" value="abono">
+            <input type="text" name="monto" inputmode="decimal" placeholder="Monto del abono" required>
+            <button type="submit" class="btn btn-sec">Registrar abono</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<a href="{{ url_for('ordenes') }}" class="btn btn-sec">Volver a órdenes</a>
+{% endblock %}

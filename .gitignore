@@ -1,0 +1,13 @@
+# Entorno virtual y archivos de Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Base de datos local (se crea sola al iniciar; no se sube)
+*.db
+*.db-journal
+
+# Sistema
+.DS_Store
+Thumbs.db

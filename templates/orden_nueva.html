@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% set activo = "nueva" %}
+{% block contenido %}
+<h1>Nueva orden</h1>
+<p class="subtitulo">Selecciona el paciente y los exámenes para generar el presupuesto.</p>
+
+<form method="post" action="{{ url_for('orden_nueva') }}">
+<div class="panel">
+    <h2>Paciente</h2>
+    <select name="id_paciente" class="campo-box" required>
+        <option value="">Seleccionar paciente...</option>
+        {% for p in pacientes %}
+        <option value="{{ p.id_paciente }}" {{ 'selected' if p.id_paciente|string == elegido }}>
+            {{ p.nombre_completo }} — C.I. {{ p.cedula }}</option>
+        {% endfor %}
+    </select>
+</div>
+
+<div class="panel">
+    <h2>Exámenes</h2>
+    {% for g in grupos if g.examenes %}
+    <h3 class="grupo-titulo">{{ g.nombre }}</h3>
+    <div class="zona-examenes">
+        {% for e in g.examenes %}
+        <label class="check-examen">
+            <input type="checkbox" name="examenes" value="{{ e.id_examen }}" data-costo="{{ e.costo }}" data-nombre="{{ e.nombre }}">
+            <span class="cx-nombre">{{ e.nombre }}</span>
+            <span class="cx-costo">{{ e.costo|dinero }}</span>
+        </label>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+
+<div class="panel barra-total">
+    <div>
+        <small>EXÁMENES SELECCIONADOS</small>
+        <strong id="cantidad">0</strong>
+    </div>
+    <div>
+        <small>TOTAL DEL PRESUPUESTO</small>
+        <strong id="total">0,00</strong>
+    </div>
+    <button type="submit" class="btn" id="btn_generar" disabled>Generar presupuesto</button>
+</div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* Calcula el total en vivo mientras se marcan exámenes */
+(function () {
+    const cajas = document.querySelectorAll("input[name=examenes]");
+    const fmt = n => n.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    function actualizar() {
+        let total = 0, n = 0;
+        cajas.forEach(c => { if (c.checked) { total += parseFloat(c.dataset.costo || 0); n++; } });
+        document.getElementById("total").textContent = fmt(total);
+        document.getElementById("cantidad").textContent = n;
+        document.getElementById("btn_generar").disabled = n === 0;
+    }
+    cajas.forEach(c => c.addEventListener("change", actualizar));
+    actualizar();
+})();
+</script>
+{% endblock %}
