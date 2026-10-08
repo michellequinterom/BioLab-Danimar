@@ -38,11 +38,13 @@ BioLab-Danimar/
 ├── db.py               # Conexión y creación de la base de datos
 ├── database/
 │   ├── schema.sql      # Tablas y vista de totales
-│   ├── seed_catalogo.sql   # Catálogo de exámenes con precios
+│   ├── seed_catalogo.sql   # Catálogo de exámenes (sin precios)
 │   └── seed_pruebas.sql    # Pacientes ficticios para pruebas
 ├── templates/          # Pantallas (HTML)
 ├── static/css/         # Estilos
-└── requirements.txt
+├── tests/              # Pruebas automáticas (pytest)
+├── requirements.txt
+└── requirements-dev.txt    # Dependencias para correr las pruebas
 ```
 
 ## Modelo de datos
@@ -60,9 +62,30 @@ python app.py
 Luego abre **http://127.0.0.1:8000**.
 
 La base de datos `biolab.db` se crea sola la primera vez, con el catálogo y tres pacientes de prueba.
+El catálogo de prueba no incluye precios (todos en 0); los precios reales se cargan en un incremento posterior.
 
-**Acceso de prueba:** usuario `licenciada`, contraseña `biolab2026`.
-Se pueden cambiar con las variables de entorno `BIOLAB_USUARIO` y `BIOLAB_CLAVE`.
+**Acceso:** el usuario es `licenciada`. Ninguna contraseña está escrita en el código:
+- Si no se define la variable `BIOLAB_CLAVE`, al iniciar se genera una **contraseña temporal** y se muestra en la consola.
+- Para fijar una contraseña propia:
+  ```bash
+  export BIOLAB_CLAVE="tu-contraseña"      # En Windows: set BIOLAB_CLAVE=tu-contraseña
+  python app.py
+  ```
+- Variables opcionales: `BIOLAB_USUARIO` (nombre de usuario) y `BIOLAB_SECRET` (clave de las sesiones; si no existe, se genera una aleatoria).
+
+## Pruebas
+Las pruebas automáticas cubren los criterios de aceptación de HU-01 y HU-02. Cada prueba usa una base de datos temporal y nueva.
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest -v
+```
+
+| Archivo | Qué verifica |
+|---|---|
+| `tests/test_login.py` | Acceso con usuario y contraseña, bloqueo sin sesión y cierre de sesión |
+| `tests/test_pacientes.py` | Registro válido, campos obligatorios, cédula numérica y no repetida, rango de edad y búsqueda |
+| `tests/test_ordenes.py` | Cálculo del total, exámenes repetidos, orden sin paciente o sin exámenes, precio fijo en la orden, abonos, abono mayor al saldo y pago completo |
 
 ## Equipo
 Proyecto de Ingeniería de Software I — Ingeniería de Sistemas, Universidad de Pamplona.

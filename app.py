@@ -5,18 +5,28 @@
 #   HU-02  Generar el presupuesto de los exámenes (orden + pago)
 # ============================================================
 import os
+import secrets
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 import db
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("BIOLAB_SECRET", "cambia-esta-clave-en-produccion")
+# Ninguna clave va escrita en el código (Definition of Done).
+# - BIOLAB_SECRET: clave para firmar las sesiones. Si no existe, se genera
+#   una aleatoria cada vez que arranca la aplicación.
+# - BIOLAB_CLAVE: contraseña de la licenciada. Si no existe, se genera una
+#   contraseña temporal y se muestra en la consola al iniciar.
+app.secret_key = os.environ.get("BIOLAB_SECRET") or secrets.token_hex(32)
 
-# Usuario de la aplicación (la licenciada). Se puede cambiar con variables
-# de entorno; la contraseña solo se guarda cifrada (hash) en memoria.
 USUARIO = os.environ.get("BIOLAB_USUARIO", "licenciada")
-CLAVE_HASH = generate_password_hash(os.environ.get("BIOLAB_CLAVE", "biolab2026"))
+_clave = os.environ.get("BIOLAB_CLAVE")
+CLAVE_TEMPORAL = None
+if not _clave:
+    _clave = CLAVE_TEMPORAL = secrets.token_urlsafe(8)
+# La contraseña solo se guarda cifrada (hash) en memoria.
+CLAVE_HASH = generate_password_hash(_clave)
+del _clave
 
 
 @app.template_filter("dinero")
@@ -200,4 +210,7 @@ def orden_pago(id_orden):
 
 if __name__ == "__main__":
     print("BioLab - Danimar en http://127.0.0.1:8000  (Ctrl+C para salir)")
+    if CLAVE_TEMPORAL:
+        print(f"Usuario: {USUARIO} | Contraseña temporal: {CLAVE_TEMPORAL}")
+        print("Para fijar una contraseña propia, define la variable BIOLAB_CLAVE.")
     app.run(host="127.0.0.1", port=8000, debug=False)
