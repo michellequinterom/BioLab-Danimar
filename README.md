@@ -66,7 +66,8 @@ El catálogo de prueba no incluye precios (todos en 0); los precios reales se ca
 
 **Acceso:** el usuario es `licenciada`. Ninguna contraseña está escrita en el código:
 - Si no se define la variable `BIOLAB_CLAVE`, al iniciar se genera una **contraseña temporal** y se muestra en la consola.
-- Para fijar una contraseña propia:
+- Para fijar una contraseña propia, copia `.env.example` como `.env` y escribe la contraseña en `BIOLAB_CLAVE`. El archivo `.env` no se sube a GitHub.
+- También se puede definir como variable de entorno:
   ```bash
   export BIOLAB_CLAVE="tu-contraseña"      # En Windows: set BIOLAB_CLAVE=tu-contraseña
   python app.py

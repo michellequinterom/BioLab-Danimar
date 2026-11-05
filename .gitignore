@@ -9,6 +9,12 @@ __pycache__/
 *.db
 *.db-journal
 
+# Contraseñas y configuración local (no se suben)
+.env
+
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Lanzador local para Mac
+Abrir_BioLab.command

@@ -9,7 +9,26 @@ import secrets
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-import db
+
+
+def _cargar_env():
+    """Lee el archivo .env (si existe) y carga sus variables.
+    El .env NO se sube a GitHub (está en .gitignore), así la contraseña
+    nunca queda en el repositorio. Una variable ya definida en el sistema
+    tiene prioridad sobre la del archivo."""
+    ruta = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if not os.path.exists(ruta):
+        return
+    with open(ruta, encoding="utf-8") as f:
+        for linea in f:
+            linea = linea.strip()
+            if linea and not linea.startswith("#") and "=" in linea:
+                clave, valor = linea.split("=", 1)
+                os.environ.setdefault(clave.strip(), valor.strip().strip('"').strip("'"))
+
+
+_cargar_env()
+import db  # noqa: E402  (después de cargar el .env)
 
 app = Flask(__name__)
 # Ninguna clave va escrita en el código (Definition of Done).
