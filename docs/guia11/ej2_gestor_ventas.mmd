@@ -1,0 +1,23 @@
+classDiagram
+    direction LR
+    class GestorDeVentas{
+        +procesar_venta(cliente, items) float
+    }
+    class ValidadorStock{
+        -db
+        +validar(items) void
+    }
+    class CalculadoraImpuestos{
+        +TASA_IVA: float = 0.19
+        +total_con_iva(items) float
+    }
+    class GeneradorFacturaPDF{
+        +generar(total) str
+    }
+    class NotificadorCorreo{
+        +confirmar_compra(cliente, total) void
+    }
+    GestorDeVentas --> ValidadorStock
+    GestorDeVentas --> CalculadoraImpuestos
+    GestorDeVentas --> GeneradorFacturaPDF
+    GestorDeVentas --> NotificadorCorreo

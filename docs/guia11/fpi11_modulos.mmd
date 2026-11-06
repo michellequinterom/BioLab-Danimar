@@ -1,0 +1,35 @@
+classDiagram
+    direction LR
+    class app["app.py · rutas web"]{
+        <<módulo>>
+        +login()
+        +paciente_nuevo()
+        +orden_nueva()
+        +orden_detalle(id_orden)
+        +orden_pago(id_orden)
+    }
+    class reglas["reglas.py · reglas del negocio (NUEVO)"]{
+        <<módulo>>
+        +TOLERANCIA: float
+        +validar_paciente(cedula, nombre, edad) str|None
+        +leer_monto(texto) float
+        +validar_abono(monto, saldo) str|None
+        +estado_pago(abonado, total) str
+    }
+    class db["db.py · acceso a datos"]{
+        <<módulo>>
+        -DB_PATH: str
+        +conectar() Connection
+        +consultar(sql, params, uno) list|dict
+        +ejecutar(sql, params) int
+    }
+    class sqlite["SQLite · biolab.db"]{
+        <<base de datos>>
+        paciente, orden, orden_examen
+        examen, grupo_examen
+        vista v_orden_totales
+    }
+    app ..> reglas : usa
+    app ..> db : usa
+    db ..> sqlite : lee y escribe
+    note for reglas "No importa Flask ni db.py, se prueba sola (tests/test_reglas.py)"

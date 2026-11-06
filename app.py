@@ -29,6 +29,7 @@ def _cargar_env():
 
 _cargar_env()
 import db  # noqa: E402  (después de cargar el .env)
+import reglas  # noqa: E402  (reglas del negocio, sin Flask ni base de datos)
 
 app = Flask(__name__)
 # Ninguna clave va escrita en el código (Definition of Done).
@@ -110,15 +111,10 @@ def paciente_nuevo():
     nombre = " ".join(request.form.get("nombre_completo", "").split())
     edad = request.form.get("edad", "").strip()
 
-    # Validaciones (criterios de aceptación de HU-01)
-    if not cedula or not nombre:
-        flash("La cédula y el nombre son obligatorios.", "error")
-        return redirect(url_for("pacientes"))
-    if not cedula.isdigit():
-        flash("La cédula solo debe contener números.", "error")
-        return redirect(url_for("pacientes"))
-    if edad and (not edad.isdigit() or not 0 <= int(edad) <= 120):
-        flash("La edad debe ser un número entre 0 y 120.", "error")
+    # Validaciones (criterios de aceptación de HU-01, en reglas.py)
+    error = reglas.validar_paciente(cedula, nombre, edad)
+    if error:
+        flash(error, "error")
         return redirect(url_for("pacientes"))
     if db.consultar("SELECT 1 FROM paciente WHERE cedula = ?", (cedula,), uno=True):
         flash(f"Ya existe un paciente con la cédula {cedula}.", "error")
@@ -203,24 +199,16 @@ def orden_pago(id_orden):
     if tipo == "completo":
         abonado = total
     elif tipo == "abono":
-        try:
-            txt = request.form.get("monto", "").strip()
-            if "," in txt:                      # formato 1.350,50
-                txt = txt.replace(".", "").replace(",", ".")
-            monto = float(txt or 0)
-        except ValueError:
-            monto = 0
-        if monto <= 0:
-            flash("Escribe un monto mayor que cero.", "error")
-            return redirect(url_for("orden_detalle", id_orden=id_orden))
-        if monto > float(orden["saldo"]) + 0.001:
-            flash("El abono no puede ser mayor que el saldo pendiente.", "error")
+        monto = reglas.leer_monto(request.form.get("monto"))
+        error = reglas.validar_abono(monto, float(orden["saldo"]))
+        if error:
+            flash(error, "error")
             return redirect(url_for("orden_detalle", id_orden=id_orden))
         abonado = float(orden["monto_abonado"]) + monto
     else:
         return redirect(url_for("orden_detalle", id_orden=id_orden))
 
-    estado = "pago" if abonado >= total - 0.001 else ("parcial" if abonado > 0 else "pendiente")
+    estado = reglas.estado_pago(abonado, total)
     db.ejecutar("UPDATE orden SET monto_abonado = ?, estado_pago = ? WHERE id_orden = ?",
                 (min(abonado, total), estado, id_orden))
     flash("Pago registrado.", "ok")

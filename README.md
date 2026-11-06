@@ -36,6 +36,7 @@ Sistema web local para el registro y control de pacientes, órdenes de exámenes
 BioLab-Danimar/
 ├── app.py              # Rutas de la aplicación
 ├── db.py               # Conexión y creación de la base de datos
+├── reglas.py           # Reglas del negocio (validaciones y pagos), sin Flask ni base de datos
 ├── database/
 │   ├── schema.sql      # Tablas y vista de totales
 │   ├── seed_catalogo.sql   # Catálogo de exámenes (sin precios)
@@ -87,6 +88,7 @@ python -m pytest -v
 | `tests/test_login.py` | Acceso con usuario y contraseña, bloqueo sin sesión y cierre de sesión |
 | `tests/test_pacientes.py` | Registro válido, campos obligatorios, cédula numérica y no repetida, rango de edad y búsqueda |
 | `tests/test_ordenes.py` | Cálculo del total, exámenes repetidos, orden sin paciente o sin exámenes, precio fijo en la orden, abonos, abono mayor al saldo y pago completo |
+| `tests/test_reglas.py` | Reglas del negocio por separado: datos del paciente, lectura del monto, validación del abono y estado de pago |
 
 ## Equipo
 Proyecto de Ingeniería de Software I — Ingeniería de Sistemas, Universidad de Pamplona.
