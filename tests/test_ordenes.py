@@ -34,6 +34,14 @@ def test_orden_sin_paciente_no_se_crea(sesion, base, examenes_con_precio):
     assert base.consultar("SELECT COUNT(*) AS n FROM orden", uno=True)["n"] == 0
 
 
+def test_examen_inexistente_no_crea_orden(sesion, base, examenes_con_precio):
+    # Un examen que ya no está en el catálogo no debe dejar una orden vacía
+    sesion.post("/ordenes/nueva", data={"id_paciente": "1",
+                                        "examenes": [str(examenes_con_precio[0]), "99999"]})
+    assert base.consultar("SELECT COUNT(*) AS n FROM orden", uno=True)["n"] == 0
+    assert base.consultar("SELECT COUNT(*) AS n FROM orden_examen", uno=True)["n"] == 0
+
+
 def test_precio_queda_fijo_en_la_orden(sesion, base, examenes_con_precio):
     orden = crear_orden(sesion, base, examenes_con_precio)
     base.ejecutar("UPDATE examen SET costo = 9999")          # cambio de precio posterior

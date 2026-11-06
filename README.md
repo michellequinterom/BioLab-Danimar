@@ -76,7 +76,7 @@ El catálogo de prueba no incluye precios (todos en 0); los precios reales se ca
 - Variables opcionales: `BIOLAB_USUARIO` (nombre de usuario) y `BIOLAB_SECRET` (clave de las sesiones; si no existe, se genera una aleatoria).
 
 ## Pruebas
-Las pruebas automáticas cubren los criterios de aceptación de HU-01 y HU-02. Cada prueba usa una base de datos temporal y nueva.
+Las pruebas automáticas cubren los criterios de aceptación de HU-01 y HU-02, incluido que una orden con un examen inexistente no se guarde. Cada prueba usa una base de datos temporal y nueva.
 
 ```bash
 pip install -r requirements-dev.txt
@@ -87,7 +87,7 @@ python -m pytest -v
 |---|---|
 | `tests/test_login.py` | Acceso con usuario y contraseña, bloqueo sin sesión y cierre de sesión |
 | `tests/test_pacientes.py` | Registro válido, campos obligatorios, cédula numérica y no repetida, rango de edad y búsqueda |
-| `tests/test_ordenes.py` | Cálculo del total, exámenes repetidos, orden sin paciente o sin exámenes, precio fijo en la orden, abonos, abono mayor al saldo y pago completo |
+| `tests/test_ordenes.py` | Cálculo del total, exámenes repetidos, orden sin paciente o sin exámenes, precio fijo en la orden, examen inexistente, abonos, abono mayor al saldo y pago completo |
 | `tests/test_reglas.py` | Reglas del negocio por separado: datos del paciente, lectura del monto, validación del abono y estado de pago |
 
 ## Equipo

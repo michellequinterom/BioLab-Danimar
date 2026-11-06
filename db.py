@@ -7,6 +7,7 @@
 # ============================================================
 import os
 import sqlite3
+from contextlib import contextmanager
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.environ.get("BIOLAB_DB", os.path.join(BASE_DIR, "biolab.db"))
@@ -53,5 +54,20 @@ def ejecutar(sql, params=()):
         cur = con.execute(sql, params)
         con.commit()
         return cur.lastrowid
+    finally:
+        con.close()
+
+
+@contextmanager
+def transaccion():
+    """Varias instrucciones como una sola operación: o se guardan todas
+    o no se guarda ninguna (si algo falla, se deshace todo)."""
+    con = conectar()
+    try:
+        yield con
+        con.commit()
+    except Exception:
+        con.rollback()
+        raise
     finally:
         con.close()
