@@ -93,15 +93,15 @@ def salir():
 @app.route("/pacientes")
 @login_requerido
 def pacientes():
-    q = request.args.get("q", "").strip()
-    if q:
-        lista = db.consultar(
+    busqueda = request.args.get("q", "").strip()
+    if busqueda:
+        lista_pacientes = db.consultar(
             """SELECT * FROM paciente
                WHERE cedula LIKE ? OR nombre_completo LIKE ?
-               ORDER BY nombre_completo""", (f"%{q}%", f"%{q}%"))
+               ORDER BY nombre_completo""", (f"%{busqueda}%", f"%{busqueda}%"))
     else:
-        lista = db.consultar("SELECT * FROM paciente ORDER BY id_paciente DESC")
-    return render_template("pacientes.html", pacientes=lista, q=q)
+        lista_pacientes = db.consultar("SELECT * FROM paciente ORDER BY id_paciente DESC")
+    return render_template("pacientes.html", pacientes=lista_pacientes, q=busqueda)
 
 
 @app.route("/pacientes/nuevo", methods=["POST"])
@@ -127,14 +127,41 @@ def paciente_nuevo():
 
 
 # ---------------- HU-02: Orden / presupuesto ----------------
+def _consultar_ordenes(id_orden=None):
+    """Órdenes con su total, saldo y los datos del paciente.
+    Sin id_orden devuelve todas (la más reciente primero); con id_orden, solo esa."""
+    sql = """SELECT t.*, p.cedula, p.nombre_completo, p.edad
+             FROM v_orden_totales t JOIN paciente p ON p.id_paciente = t.id_paciente"""
+    if id_orden is None:
+        return db.consultar(sql + " ORDER BY t.id_orden DESC")
+    return db.consultar(sql + " WHERE t.id_orden = ?", (id_orden,), uno=True)
+
+
+def _crear_orden(id_paciente, ids_examenes):
+    """Crea la orden y copia el precio actual de cada examen (regla RN-03).
+    Un examen elegido dos veces se cobra una sola vez."""
+    id_orden = db.ejecutar("INSERT INTO orden (id_paciente) VALUES (?)", (id_paciente,))
+    for id_examen in dict.fromkeys(ids_examenes):
+        db.ejecutar(
+            """INSERT INTO orden_examen (id_orden, id_examen, costo)
+               SELECT ?, id_examen, costo FROM examen WHERE id_examen = ?""",
+            (id_orden, id_examen))
+    return id_orden
+
+
+def _catalogo_por_grupo():
+    """Grupos de exámenes, cada uno con la lista de sus exámenes."""
+    grupos = db.consultar("SELECT * FROM grupo_examen ORDER BY nombre")
+    examenes = db.consultar("SELECT * FROM examen ORDER BY nombre")
+    for grupo in grupos:
+        grupo["examenes"] = [examen for examen in examenes if examen["id_grupo"] == grupo["id_grupo"]]
+    return grupos
+
+
 @app.route("/ordenes")
 @login_requerido
 def ordenes():
-    lista = db.consultar(
-        """SELECT t.*, p.cedula, p.nombre_completo
-           FROM v_orden_totales t JOIN paciente p ON p.id_paciente = t.id_paciente
-           ORDER BY t.id_orden DESC""")
-    return render_template("ordenes.html", ordenes=lista)
+    return render_template("ordenes.html", ordenes=_consultar_ordenes())
 
 
 @app.route("/ordenes/nueva", methods=["GET", "POST"])
@@ -142,39 +169,28 @@ def ordenes():
 def orden_nueva():
     if request.method == "POST":
         id_paciente = request.form.get("id_paciente", "")
-        examenes = [e for e in request.form.getlist("examenes") if e.isdigit()]
+        ids_examenes = [valor for valor in request.form.getlist("examenes") if valor.isdigit()]
         if not db.consultar("SELECT 1 FROM paciente WHERE id_paciente = ?", (id_paciente,), uno=True):
             flash("Selecciona un paciente.", "error")
             return redirect(url_for("orden_nueva"))
-        if not examenes:
+        if not ids_examenes:
             flash("Selecciona al menos un examen.", "error")
             return redirect(url_for("orden_nueva", paciente=id_paciente))
 
-        id_orden = db.ejecutar("INSERT INTO orden (id_paciente) VALUES (?)", (id_paciente,))
-        for id_examen in dict.fromkeys(examenes):            # sin repetidos
-            db.ejecutar(
-                """INSERT INTO orden_examen (id_orden, id_examen, costo)
-                   SELECT ?, id_examen, costo FROM examen WHERE id_examen = ?""",
-                (id_orden, id_examen))
+        id_orden = _crear_orden(id_paciente, ids_examenes)
         flash("Presupuesto generado.", "ok")
         return redirect(url_for("orden_detalle", id_orden=id_orden))
 
-    lista_pac = db.consultar("SELECT id_paciente, cedula, nombre_completo FROM paciente ORDER BY nombre_completo")
-    grupos = db.consultar("SELECT * FROM grupo_examen ORDER BY nombre")
-    examenes = db.consultar("SELECT * FROM examen ORDER BY nombre")
-    for g in grupos:
-        g["examenes"] = [e for e in examenes if e["id_grupo"] == g["id_grupo"]]
-    return render_template("orden_nueva.html", pacientes=lista_pac, grupos=grupos,
+    lista_pacientes = db.consultar(
+        "SELECT id_paciente, cedula, nombre_completo FROM paciente ORDER BY nombre_completo")
+    return render_template("orden_nueva.html", pacientes=lista_pacientes, grupos=_catalogo_por_grupo(),
                            elegido=request.args.get("paciente", ""))
 
 
 @app.route("/ordenes/<int:id_orden>")
 @login_requerido
 def orden_detalle(id_orden):
-    orden = db.consultar(
-        """SELECT t.*, p.cedula, p.nombre_completo, p.edad
-           FROM v_orden_totales t JOIN paciente p ON p.id_paciente = t.id_paciente
-           WHERE t.id_orden = ?""", (id_orden,), uno=True)
+    orden = _consultar_ordenes(id_orden)
     if not orden:
         flash("La orden no existe.", "error")
         return redirect(url_for("ordenes"))
@@ -193,6 +209,7 @@ def orden_pago(id_orden):
     orden = db.consultar("SELECT * FROM v_orden_totales WHERE id_orden = ?", (id_orden,), uno=True)
     if not orden:
         return redirect(url_for("ordenes"))
+    pantalla_orden = url_for("orden_detalle", id_orden=id_orden)
     tipo = request.form.get("tipo")
     total = float(orden["total"])
 
@@ -203,16 +220,16 @@ def orden_pago(id_orden):
         error = reglas.validar_abono(monto, float(orden["saldo"]))
         if error:
             flash(error, "error")
-            return redirect(url_for("orden_detalle", id_orden=id_orden))
+            return redirect(pantalla_orden)
         abonado = float(orden["monto_abonado"]) + monto
     else:
-        return redirect(url_for("orden_detalle", id_orden=id_orden))
+        return redirect(pantalla_orden)
 
     estado = reglas.estado_pago(abonado, total)
     db.ejecutar("UPDATE orden SET monto_abonado = ?, estado_pago = ? WHERE id_orden = ?",
                 (min(abonado, total), estado, id_orden))
     flash("Pago registrado.", "ok")
-    return redirect(url_for("orden_detalle", id_orden=id_orden))
+    return redirect(pantalla_orden)
 
 
 if __name__ == "__main__":
