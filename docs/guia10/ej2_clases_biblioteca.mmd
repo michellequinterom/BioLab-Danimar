@@ -1,0 +1,22 @@
+classDiagram
+    direction LR
+    class Usuario {
+        -documento: str
+        -nombre: str
+        +puede_prestar() bool
+    }
+    class Libro {
+        -isbn: str
+        -titulo: str
+        -disponible: bool
+        +esta_disponible() bool
+    }
+    class Prestamo {
+        -fecha_prestamo: date
+        -fecha_limite: date
+        -fecha_devolucion: date | None
+        +esta_vencido(hoy: date) bool
+        +registrar_devolucion(fecha: date) void
+    }
+    Usuario "1" --> "0..*" Prestamo : realiza
+    Prestamo "0..*" --> "1" Libro : presta

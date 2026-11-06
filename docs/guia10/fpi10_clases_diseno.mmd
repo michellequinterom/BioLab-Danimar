@@ -1,0 +1,57 @@
+classDiagram
+    direction LR
+    class Paciente {
+        -id_paciente: int
+        -cedula: str
+        -nombre_completo: str
+        -edad: int
+        -fecha_registro: date
+        +validar() list~str~
+    }
+    class Orden {
+        -id_orden: int
+        -fecha: date
+        -estado_pago: EstadoPago
+        -monto_abonado: Decimal
+        +total() Decimal
+        +saldo() Decimal
+        +registrar_abono(monto: Decimal) void
+        +registrar_pago_completo() void
+    }
+    class OrdenExamen {
+        -costo: Decimal
+    }
+    class Examen {
+        -id_examen: int
+        -nombre: str
+        -muestra: str
+        -costo: Decimal
+    }
+    class GrupoExamen {
+        -id_grupo: int
+        -nombre: str
+    }
+    class Parametro {
+        -id_parametro: int
+        -nombre: str
+        -unidad: str
+        -valor_referencia: str
+    }
+    class Resultado {
+        -valor: str
+        -observaciones: str
+    }
+    class EstadoPago {
+        <<enumeration>>
+        PENDIENTE
+        PARCIAL
+        PAGO
+    }
+    Paciente "1" --> "0..*" Orden : solicita
+    Orden "1" *-- "1..*" OrdenExamen : incluye
+    OrdenExamen "0..*" --> "1" Examen : cobra
+    GrupoExamen "1" o-- "1..*" Examen : agrupa
+    Examen "1" *-- "1..*" Parametro : mide
+    OrdenExamen "1" *-- "0..*" Resultado : registra
+    Resultado "0..*" --> "1" Parametro : valor de
+    Orden ..> EstadoPago

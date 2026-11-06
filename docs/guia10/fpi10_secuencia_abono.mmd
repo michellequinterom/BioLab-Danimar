@@ -1,0 +1,27 @@
+sequenceDiagram
+    actor L as Lic. Marisol
+    participant N as Navegador
+    participant R as app.py · orden_pago()
+    participant D as db.py
+    participant S as SQLite
+    L->>N: Escribe el abono y pulsa "Registrar"
+    N->>R: POST /ordenes/{id}/pago (tipo=abono, monto)
+    R->>D: consultar(v_orden_totales, id)
+    D->>S: SELECT total, saldo, monto_abonado
+    S-->>D: fila de la orden
+    D-->>R: orden {total, saldo, monto_abonado}
+    alt monto <= 0
+        R-->>N: flash "Escribe un monto mayor que cero." + redirect
+    else monto > saldo
+        R-->>N: flash "El abono no puede ser mayor que el saldo pendiente." + redirect
+    else abono válido
+        R->>R: abonado = monto_abonado + monto
+        R->>R: estado = pago / parcial / pendiente
+        R->>D: ejecutar(UPDATE orden SET monto_abonado, estado_pago)
+        D->>S: UPDATE orden
+        S-->>D: ok
+        R-->>N: flash "Pago registrado." + redirect /ordenes/{id}
+    end
+    N->>R: GET /ordenes/{id}
+    R-->>N: orden con su nuevo saldo y estado
+    N-->>L: Muestra el saldo y la etiqueta "Abono parcial" o "Pagado"

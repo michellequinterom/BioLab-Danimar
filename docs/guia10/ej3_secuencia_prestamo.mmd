@@ -1,0 +1,19 @@
+sequenceDiagram
+    actor B as Bibliotecario
+    participant S as ServicioPrestamos
+    participant U as Usuario
+    participant L as Libro
+    participant P as Prestamo
+    B->>S: registrar_prestamo(documento, isbn)
+    S->>U: puede_prestar()
+    U-->>S: true
+    S->>L: esta_disponible()
+    L-->>S: true
+    alt el usuario puede prestar y el libro está disponible
+        S->>P: crear(usuario, libro, hoy, hoy + 15 días)
+        P-->>S: préstamo creado
+        S->>L: marcar_prestado()
+        S-->>B: "Préstamo registrado, devolver antes del <fecha límite>"
+    else el usuario tiene 3 préstamos activos o el libro está prestado
+        S-->>B: mensaje de rechazo con el motivo
+    end
