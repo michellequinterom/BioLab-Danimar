@@ -139,13 +139,21 @@ def _consultar_ordenes(id_orden=None):
 
 def _crear_orden(id_paciente, ids_examenes):
     """Crea la orden y copia el precio actual de cada examen (regla RN-03).
-    Un examen elegido dos veces se cobra una sola vez."""
-    id_orden = db.ejecutar("INSERT INTO orden (id_paciente) VALUES (?)", (id_paciente,))
-    for id_examen in dict.fromkeys(ids_examenes):
-        db.ejecutar(
-            """INSERT INTO orden_examen (id_orden, id_examen, costo)
-               SELECT ?, id_examen, costo FROM examen WHERE id_examen = ?""",
-            (id_orden, id_examen))
+    Un examen elegido dos veces se cobra una sola vez.
+    Devuelve None, sin guardar nada, si alguno de los exámenes no existe."""
+    ids_unicos = list(dict.fromkeys(ids_examenes))
+    marcadores = ", ".join("?" * len(ids_unicos))
+    existentes = db.consultar(
+        f"SELECT id_examen FROM examen WHERE id_examen IN ({marcadores})", ids_unicos)
+    if len(existentes) != len(ids_unicos):
+        return None
+    with db.transaccion() as con:          # la orden y sus exámenes se guardan juntos
+        id_orden = con.execute("INSERT INTO orden (id_paciente) VALUES (?)", (id_paciente,)).lastrowid
+        for id_examen in ids_unicos:
+            con.execute(
+                """INSERT INTO orden_examen (id_orden, id_examen, costo)
+                   SELECT ?, id_examen, costo FROM examen WHERE id_examen = ?""",
+                (id_orden, id_examen))
     return id_orden
 
 
@@ -178,6 +186,9 @@ def orden_nueva():
             return redirect(url_for("orden_nueva", paciente=id_paciente))
 
         id_orden = _crear_orden(id_paciente, ids_examenes)
+        if id_orden is None:
+            flash("Uno de los exámenes elegidos ya no está en el catálogo. Revisa la selección.", "error")
+            return redirect(url_for("orden_nueva", paciente=id_paciente))
         flash("Presupuesto generado.", "ok")
         return redirect(url_for("orden_detalle", id_orden=id_orden))
 
